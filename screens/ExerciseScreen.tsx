@@ -1,28 +1,42 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { useGame } from "../context/GameContext"
-import { exerciseData } from "../data/exercices"
+import { useExercises } from "../context/ExerciseContext"
+import { useAuth } from "../context/AuthContext"
+import { doc, setDoc } from "firebase/firestore"
+import { db } from "../config/firebaseConfig"
 
 const ExerciseScreen = () => {
   const navigation = useNavigation()
   const route = useRoute()
   const { levelId } = route.params as { levelId: number }
   const { lives, decreaseLives, completeLevel } = useGame()
+  const { exercises, setExercises } = useExercises()
+  const { user } = useAuth()
+  const [exercise, setExercise] = useState(exercises.find((ex) => ex.id === levelId))
 
-  const [exercise, setExercise] = useState(exerciseData.find((ex) => ex.id === levelId))
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
 
   useEffect(() => {
-    // If no lives left, navigate to game over
     if (lives === 0) {
       navigation.navigate("GameOver" as never)
     }
   }, [lives, navigation])
+
+  const updateExerciseInFirestore = async () => {
+    if (!user || !exercise) return
+    const updatedExercise = { ...exercise, completed: true }
+
+    try {
+      await setDoc(doc(db, `users/${user.uid}/exercises/${exercise.id}`), updatedExercise)
+      console.log(`✅ Exercice ${exercise.id} mis à jour dans Firestore`)
+    } catch (error) {
+      console.error("❌ Erreur mise à jour Firestore :", error)
+    }
+  }
 
   const handleOptionSelect = (optionIndex: number) => {
     setSelectedOption(optionIndex)
@@ -34,6 +48,15 @@ const ExerciseScreen = () => {
       decreaseLives()
     } else {
       completeLevel(levelId)
+
+      // Mise à jour en Firestore et dans le context
+      updateExerciseInFirestore()
+
+      setExercises(prev =>
+        prev.map(ex =>
+          ex.id === levelId ? { ...ex, completed: true } : ex
+        )
+      )
     }
 
     setShowFeedback(true)
@@ -77,7 +100,6 @@ const ExerciseScreen = () => {
         ))}
       </View>
 
-      {/* Feedback Modal */}
       <Modal visible={showFeedback} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

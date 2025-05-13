@@ -1,34 +1,55 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { useGame } from "../context/GameContext"
-import { exerciseData } from "../data/exercices"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useGame } from "../context/GameContext";
+import { useExercises } from "../context/ExerciseContext";
 
 const LevelMapScreen = () => {
-  const navigation = useNavigation()
-  const { completedLevels, isLevelUnlocked } = useGame()
+  const navigation = useNavigation();
+  const { completedLevels, isLevelUnlocked } = useGame();
+  const { exercises, loadingExercises } = useExercises();
+
+  console.log("🧠 Exercices visibles dans LevelMap : ", exercises);
 
   const handleLevelPress = (levelId: number) => {
     if (isLevelUnlocked(levelId)) {
-      navigation.navigate("Exercise" as never, { levelId } as never)
+      navigation.navigate("Exercise" as never, { levelId } as never);
     }
-  }
+  };
 
   const getLevelStatus = (levelId: number) => {
     if (completedLevels.includes(levelId)) {
-      return "completed"
+      return "completed";
     }
     if (isLevelUnlocked(levelId)) {
-      return "unlocked"
+      return "unlocked";
     }
-    return "locked"
+    return "locked";
+  };
+
+  if (loadingExercises) {
+    return (
+      <View style={styles.container}>
+        <Text>Chargement des exercices...</Text>
+      </View>
+    );
+  }
+
+  if (exercises.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text>Aucun exercice disponible.</Text>
+      </View>
+    );
   }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Niveaux de Programmation</Text>
       <View style={styles.levelGrid}>
-        {exerciseData.map((exercise) => {
-          const status = getLevelStatus(exercise.id)
+        {[...exercises]
+          .sort((a, b) => a.id - b.id)
+          .map((exercise) => {
+          const status = getLevelStatus(exercise.id);
           return (
             <TouchableOpacity
               key={exercise.id}
@@ -53,12 +74,12 @@ const LevelMapScreen = () => {
                 </View>
               )}
             </TouchableOpacity>
-          )
+          );
         })}
       </View>
     </ScrollView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -135,6 +156,6 @@ const styles = StyleSheet.create({
   lockedBadgeText: {
     fontSize: 12,
   },
-})
+});
 
-export default LevelMapScreen
+export default LevelMapScreen;
