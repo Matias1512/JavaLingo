@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -17,8 +16,6 @@ import { ExerciseProvider } from "./context/ExerciseContext";
 import { collection, setDoc, doc } from "firebase/firestore";
 import { db } from "./config/firebaseConfig";
 import fallbackExercises from "./data/fallbackExercises";
-import { OfflineProvider } from "./context/OfflineContext";
-
 const Stack = createNativeStackNavigator();
 
 
@@ -69,7 +66,6 @@ function AppNavigation() {
 export default function App() {
   seedGlobalExercises();
   return (
-    <OfflineProvider>
       <AuthProvider>
         <ExerciseProvider>
           <GameProvider>
@@ -77,6 +73,5 @@ export default function App() {
           </GameProvider>
         </ExerciseProvider>   
       </AuthProvider>
-    </OfflineProvider>
   );
 }

@@ -16,25 +16,14 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.anonymous.JavaLingo",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34
+      "package": "com.anonymous.JavaLingo"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "e4fa7cdf-7890-4a4c-a2e4-cdd49ae4c89b"
-      }
     }
   }
 }

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import {
   View,
@@ -69,18 +67,11 @@ export default function LoginScreen({ navigation }: any) {
         // ➡️ SUPPRIME navigation.navigate("LevelMap") ici
         // C'est AuthProvider qui va rediriger tout seul !
       }
-    } catch (error: any) {
-      const errorCode = error.code;
-
-      if (isSignUp) {
-        Alert.alert("Erreur", "Erreur lors de la création du compte. Veuillez réessayer.");
-      } else {
-        if (errorCode === "auth/invalid-credential" || errorCode === "auth/wrong-password" || errorCode === "auth/user-not-found") {
-          Alert.alert("Erreur", "Email ou mot de passe incorrect.");
-        } else {
-          Alert.alert("Erreur", "Une erreur est survenue. Code : " + errorCode);
-        }
-      }
+    } catch (error) {
+      Alert.alert(
+        "Erreur",
+        isSignUp ? "Erreur lors de la création du compte. Veuillez réessayer." : "Email ou mot de passe incorrect."
+      );
     } finally {
       setIsLoading(false);
     }

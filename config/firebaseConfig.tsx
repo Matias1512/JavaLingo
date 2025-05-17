@@ -8,10 +8,10 @@ const firebaseConfig = {
   apiKey: "AIzaSyCpkxvOrUvBsfHhhun1JZqd8f2dRtCXNPY",
   authDomain: "javalinguo.firebaseapp.com",
   projectId: "javalinguo",
-  storageBucket: "javalinguo.appspot.com",
+  storageBucket: "javalinguo.firebasestorage.app",
   messagingSenderId: "203087424359",
-  appId: "1:203087424359:web:a8ecf1ea2171ee36381dc2",
-  measurementId: "G-7SGHFZQ881"
+  appId: "1:203087424359:web:b1991d0ed8f50f1e381dc2",
+  measurementId: "G-3BEJEN8MHT"
 };
 
 // On initialise Firebase
