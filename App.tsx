@@ -17,6 +17,7 @@ import { ExerciseProvider } from "./context/ExerciseContext";
 import { collection, setDoc, doc } from "firebase/firestore";
 import { db } from "./config/firebaseConfig";
 import fallbackExercises from "./data/fallbackExercises";
+import { OfflineProvider } from "./context/OfflineContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -68,12 +69,14 @@ function AppNavigation() {
 export default function App() {
   seedGlobalExercises();
   return (
-    <AuthProvider>
-      <ExerciseProvider>
-        <GameProvider>
-          <AppContent />
-        </GameProvider>
-      </ExerciseProvider>   
-    </AuthProvider>
+    <OfflineProvider>
+      <AuthProvider>
+        <ExerciseProvider>
+          <GameProvider>
+            <AppContent />
+          </GameProvider>
+        </ExerciseProvider>   
+      </AuthProvider>
+    </OfflineProvider>
   );
 }

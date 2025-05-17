@@ -73,11 +73,9 @@ export const signup = async (email: string, password: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await migrateExercisesToUser(userCredential.user.uid);
-    console.log('Utilisateur inscrit :', userCredential.user);
     await ensureUserDocumentExists(userCredential.user.uid);
     return userCredential.user;
   } catch (error) {
-    console.error('Erreur inscription:', (error as Error).message);
     throw error;
   }
 };
@@ -86,11 +84,9 @@ export const signup = async (email: string, password: string) => {
 export const login = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    console.log('Utilisateur connecté :', userCredential.user);
     await ensureUserDocumentExists(userCredential.user.uid);
     return userCredential.user;
   } catch (error) {
-    console.error('Erreur connexion:', (error as Error).message);
     throw error;
   }
 };
@@ -99,9 +95,7 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   try {
     await signOut(auth);
-    console.log('Déconnecté');
   } catch (error) {
-    console.error('Erreur déconnexion:', (error as Error).message);
     throw error;
   }
 };
