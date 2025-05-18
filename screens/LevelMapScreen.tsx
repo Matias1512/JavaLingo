@@ -15,7 +15,7 @@ const LevelMapScreen = () => {
       navigation.navigate("Exercise" as never, { levelId } as never);
     }
   };
-
+ 
   const getLevelStatus = (levelId: number) => {
     if (completedLevels.includes(levelId)) {
       return "completed";

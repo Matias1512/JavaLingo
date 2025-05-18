@@ -26,19 +26,9 @@ const ExerciseScreen = () => {
     }
   }, [lives, navigation])
 
-  const updateExerciseInFirestore = async () => {
-    if (!user || !exercise) return
-    const updatedExercise = { ...exercise, completed: true }
+  const { updateExercise } = useExercises();
 
-    try {
-      await setDoc(doc(db, `users/${user.uid}/exercises/${exercise.id}`), updatedExercise)
-      console.log(`✅ Exercice ${exercise.id} mis à jour dans Firestore`)
-    } catch (error) {
-      console.error("❌ Erreur mise à jour Firestore :", error)
-    }
-  }
-
-  const handleOptionSelect = (optionIndex: number) => {
+  const handleOptionSelect = async (optionIndex: number) => {
     setSelectedOption(optionIndex)
 
     const correct = optionIndex === exercise?.correctAnswer
@@ -50,7 +40,7 @@ const ExerciseScreen = () => {
       completeLevel(levelId)
 
       // Mise à jour en Firestore et dans le context
-      updateExerciseInFirestore()
+      await updateExercise({ ...exercise, completed: true });
 
       setExercises(prev =>
         prev.map(ex =>

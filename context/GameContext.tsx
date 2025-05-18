@@ -1,84 +1,105 @@
-import type React from "react"
-import { createContext, useState, useContext, useEffect } from "react"
-import { useExercises } from "./ExerciseContext"
-import { useAuth } from "./AuthContext"
-import { db } from "../config/firebaseConfig"
-import { doc, getDoc, setDoc, writeBatch, collection } from "firebase/firestore"
+import type React from "react";
+import { createContext, useState, useContext, useEffect } from "react";
+import { useExercises } from "./ExerciseContext";
+import { useAuth } from "./AuthContext";
+import { db } from "../config/firebaseConfig";
+import { doc, getDoc, setDoc, writeBatch, collection } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface GameContextType {
-  lives: number
-  completedLevels: number[]
-  decreaseLives: () => void
-  completeLevel: (levelId: number) => void
-  resetGame: () => void
-  isLevelUnlocked: (levelId: number) => boolean
+  lives: number;
+  completedLevels: number[];
+  decreaseLives: () => void;
+  completeLevel: (levelId: number) => void;
+  resetGame: () => void;
+  isLevelUnlocked: (levelId: number) => boolean;
 }
 
-const GameContext = createContext<GameContextType | undefined>(undefined)
+const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { exercises, setExercises } = useExercises()
-  const { user } = useAuth()
-  const [completedLevels, setCompletedLevels] = useState<number[]>([])
-  const [lives, setLives] = useState(5)
+  const { exercises, setExercises } = useExercises();
+  const { user } = useAuth();
+  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const [lives, setLives] = useState(5);
 
-  // Sync completedLevels from Firestore exercises
+  // Mise à jour des niveaux complétés
   useEffect(() => {
-    const synced = exercises.filter(ex => ex.completed).map(ex => ex.id)
-    setCompletedLevels(synced)
-  }, [exercises])
+    const synced = exercises.filter(ex => ex.completed).map(ex => ex.id);
+    setCompletedLevels(synced);
+  }, [exercises]);
 
-  // Load lives from Firestore on mount
+  // Chargement des vies au démarrage
   useEffect(() => {
     const loadLives = async () => {
-      if (!user) return;
-      const docRef = doc(db, `users/${user.uid}`);
-      const snapshot = await getDoc(docRef);
+      const isOffline = await AsyncStorage.getItem("isOfflineMode");
 
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        if (typeof data.lives === 'number') {
-          setLives(data.lives);
+      if (!user || isOffline === "true") {
+        // Mode invité ou hors-ligne
+        const localLives = await AsyncStorage.getItem("lives");
+        if (localLives !== null) {
+          const parsed = parseInt(localLives);
+          setLives(isNaN(parsed) ? 5 : parsed);
         } else {
-          console.warn('⚠️ Le champ lives est manquant en base, mais on ne l’écrase pas ici.');
+          setLives(5);
         }
-      } else {
-        console.warn('❗ Document utilisateur inexistant. Aucune vie chargée.');
+        return;
+      }
+
+      // Utilisateur connecté → Firestore
+      try {
+        const docRef = doc(db, `users/${user.uid}`);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (typeof data.lives === "number") {
+            setLives(data.lives);
+          }
+        }
+      } catch (e) {
+        console.error("❌ Erreur chargement vies Firestore :", e);
       }
     };
 
     loadLives();
-  }, [user])
+  }, [user]);
 
   const decreaseLives = async () => {
-    if (!user) return;
-
     const updated = Math.max(0, lives - 1);
     setLives(updated);
 
-    try {
-      await setDoc(doc(db, `users/${user.uid}`), { lives: updated }, { merge: true });
-      console.log(`✅ Vie mise à jour : ${updated}`);
-    } catch (err) {
-      console.error("❌ Erreur mise à jour des vies :", err);
-    }
-  }
+    const isOffline = await AsyncStorage.getItem("isOfflineMode");
 
-  const completeLevel = (levelId: number) => {
-    if (!completedLevels.includes(levelId)) {
-      setCompletedLevels(prev => [...prev, levelId])
+    if (!user || isOffline === "true") {
+      // En mode hors-ligne ou invité
+      await AsyncStorage.setItem("lives", updated.toString());
+    } else {
+      // En ligne avec compte → Firestore
+      try {
+        await setDoc(doc(db, `users/${user.uid}`), { lives: updated }, { merge: true });
+      } catch (err) {
+        console.error("❌ Erreur mise à jour des vies :", err);
+      }
     }
-  }
+  };
 
   const resetGame = async () => {
-    if (!user) return
+    setLives(5);
+    setCompletedLevels([]);
 
-    // Réinitialiser toutes les vies
-    setLives(5)
-    await setDoc(doc(db, `users/${user.uid}`), { lives: 5 }, { merge: true })
+    const isOffline = await AsyncStorage.getItem("isOfflineMode");
 
-    // Réinitialiser tous les exercices à completed: false
+    if (!user || isOffline === "true") {
+      await AsyncStorage.setItem("lives", "5");
+      await AsyncStorage.setItem("completedLevels", JSON.stringify([]));
+      return;
+    }
+
     try {
+      // Mise à jour des vies en base
+      await setDoc(doc(db, `users/${user.uid}`), { lives: 5 }, { merge: true });
+
+      // Reset des exercices en Firestore
       const batch = writeBatch(db);
       const exercisesRef = collection(db, `users/${user.uid}/exercises`);
 
@@ -89,20 +110,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       await batch.commit();
-      console.log("✅ Exercices réinitialisés (aucun débloqué)");
 
-      // Met à jour localement aussi
-      setExercises(exercises.map(ex => ({ ...ex, completed: false })))
-      setCompletedLevels([]);
+      setExercises(exercises.map(ex => ({ ...ex, completed: false })));
     } catch (error) {
-      console.error("❌ Erreur reset des exercices :", error);
+      console.error("❌ Erreur reset Firestore :", error);
     }
-  }
+  };
+
+  const completeLevel = (levelId: number) => {
+    if (!completedLevels.includes(levelId)) {
+      const updatedLevels = [...completedLevels, levelId];
+      setCompletedLevels(updatedLevels);
+
+      AsyncStorage.getItem("isOfflineMode").then((offline) => {
+        if (offline === "true" && !user) {
+          AsyncStorage.setItem("completedLevels", JSON.stringify(updatedLevels));
+        }
+      });
+    }
+  };
 
   const isLevelUnlocked = (levelId: number) => {
-    if (levelId === 1) return true
-    return completedLevels.includes(levelId - 1)
-  }
+    if (levelId === 1) return true;
+    return completedLevels.includes(levelId - 1);
+  };
 
   return (
     <GameContext.Provider
@@ -117,13 +148,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     >
       {children}
     </GameContext.Provider>
-  )
-}
+  );
+};
 
 export const useGame = () => {
-  const context = useContext(GameContext)
+  const context = useContext(GameContext);
   if (context === undefined) {
-    throw new Error("useGame must be used within a GameProvider")
+    throw new Error("useGame must be used within a GameProvider");
   }
-  return context
-}
+  return context;
+};

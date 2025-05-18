@@ -1,15 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { useGame } from "../context/GameContext"
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { useGame } from "../context/GameContext";
 
 const GameOverScreen = () => {
-  const navigation = useNavigation()
-  const { resetGame } = useGame()
+  const navigation = useNavigation();
+  const { resetGame } = useGame();
 
-  const handleRetry = () => {
-    resetGame()
-    navigation.navigate("LevelMap" as never)
-  }
+  const handleRetry = async () => {
+    await resetGame(); // appel à la fonction de reset contextuelle (local ou Firestore selon le cas)
+    navigation.navigate("LevelMap" as never);
+  };
 
   return (
     <View style={styles.container}>
@@ -20,8 +20,8 @@ const GameOverScreen = () => {
         <Text style={styles.retryButtonText}>Réessayer</Text>
       </TouchableOpacity>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-})
+});
 
-export default GameOverScreen
+export default GameOverScreen;
